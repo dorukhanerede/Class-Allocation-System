@@ -25,14 +25,24 @@ private:
     string name;
 };
 
+//DEPARTMENT CLASS FOR SECURITY PERSONAL
+class Department
+{
+public:
+    Department(string name) {departmentName = name;};
+    string getName(){return departmentName;};
+private:
+    string departmentName;
+};
+
 //ABSTRACT ITERATOR
 class abstractIterator
 {
 public:
     virtual Component* getCurrent()=0;
-    virtual void First()=0;
+    virtual void First(string type)=0;
     virtual bool Done()=0;
-    virtual void Next()=0;
+    virtual void Next(string type)=0;
     abstractIterator(){}
 };
 
@@ -62,18 +72,30 @@ public:
 class Floor : public Component
 {
 public:
-	Floor(string name) : Component(name) {};
+	Floor(string name, Department* dep) : Component(name) {setDepartment(dep);};
 
 	void add(Component *c) {
 		components.push_back(c);
 	}
+
+	void setDepartment(Department *_department)
+	{
+	    department = _department;
+	}
+
+	string getDepartmentName() {
+        return department->getName();
+	}
+
+private:
+    Department* department;
 };
 
 //LEAF CLASS
 class Classroom : public Component
 {
 public:
-	Classroom(string name) : Component(name) {};
+	Classroom(string name) : Component(name) {setAvailibility(true);};
 
 	void setAvailibility(bool toSet)
 	{
@@ -92,7 +114,7 @@ public:
 	}
 
 private:
-    bool available = true;
+    bool available;
 };
 
 //
@@ -111,9 +133,11 @@ public:
     {
         return currentIndex>=collection.size();
     }
-    void Next()
+    void Next(string type)
     {
-        for(;;)
+        if(type=="")
+        {
+            for(;;)
         {
             if(currentIndex==(collection.size())-1)
             {
@@ -126,12 +150,30 @@ public:
                 break;
             }
         }
+        }else
+        {
+           currentIndex++;
+        }
+
     }
-    void First()
+    void First(string type)
     {
-        currentIndex=0;
+        if(type=="")
+        {
+            currentIndex=0;
         if(!getCurrent()->getAvailibility())
-            Next();
+            {
+                for(currentIndex = 1; currentIndex >= collection.size();currentIndex++)
+                {
+                    if(getCurrent()->getAvailibility())
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        else
+            currentIndex=0;
     }
     Classroom* getCurrent()
     {
@@ -146,21 +188,35 @@ class ResourceAllocationDepartment
 {
 public:
     ResourceAllocationDepartment(ClassroomIterator* i) {classroomIterator=i;};
-    void setAllAvailabilityOfClassrooms()
+    ClassroomIterator* setAllAvailabilityOfClassrooms(bool toSet)
     {
-        for(classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next())
+        for(classroomIterator->First("all"); !classroomIterator->Done(); classroomIterator->Next("all"))
+        {
+            classroomIterator->getCurrent()->setAvailibility(toSet);
+        }
+        return classroomIterator;
+    };
+
+    void setExamToClassrooms(vector<Classroom*> classrooms)
     {
-        classroomIterator->getCurrent()->setAvailibility(false);
-    }
+      ClassroomIterator* ci = new ClassroomIterator(&classrooms);
+      for(ci->First("all"); !ci->Done(); ci->Next("all"))
+        {
+            ci->getCurrent()->setAvailibility(false);
+        }
+        delete ci;
     };
 private:
     ClassroomIterator* classroomIterator;
 };
 
-void printClassrooms(ClassroomIterator *i) {
-    cout << "Iterating classrooms: " << endl;
-    for (i->First(); !i->Done(); i->Next()) {
-        cout << "Available Classrooms -> " << i->getCurrent()->getName() << endl;
+void printClassrooms(ClassroomIterator *i, string type) {
+    cout << endl << "Iterating classrooms: " << endl;
+    for (i->First(type); !i->Done(); i->Next(type)) {
+        if(!i->getCurrent()->getAvailibility())
+            cout<<"No class room available"<<endl;
+        else
+            cout << "Available Classrooms -> " << i->getCurrent()->getName() << endl;
     }
 }
 
@@ -208,13 +264,16 @@ void printClassrooms(ClassroomIterator *i) {
 int main()
 {
     vector<Classroom*> classrooms;
+    Department* se = new Department("Software Engineering");
+    Department* ce = new Department("Computer Engineering");
+    Department* cie = new Department("Civil Engineering");
     Campus* ieu = new Campus("IEU");
     Building* m = new Building("M block");
     Building* c = new Building("C block");
-    Floor* firstM = new Floor("1st Floor");
-    Floor* secondM = new Floor("2nd Floor");
-    Floor* firstC = new Floor("1st Floor");
-    Floor* secondC = new Floor("2nd Floor");
+    Floor* firstM = new Floor("1st Floor", se);
+    Floor* secondM = new Floor("2nd Floor", ce);
+    Floor* firstC = new Floor("1st Floor", se);
+    Floor* secondC = new Floor("2nd Floor", cie);
     Classroom* m101 = new Classroom("M101");
     Classroom* m102 = new Classroom("M102");
     Classroom* c101 = new Classroom("C101");
@@ -259,10 +318,25 @@ int main()
     c202->setAvailibility(false);
 
     ClassroomIterator* myIterator = new ClassroomIterator(&classrooms);
-    printClassrooms(myIterator);
+    printClassrooms(myIterator,"");
 
     ResourceAllocationDepartment* rad = new ResourceAllocationDepartment(myIterator);
-    rad->setAllAvailabilityOfClassrooms();
+    rad->setAllAvailabilityOfClassrooms(true);
 
-    printClassrooms(myIterator);
+    printClassrooms(myIterator,"");
+
+    cout << endl << "M first floor : " << firstM->getDepartmentName() << endl;
+    cout << "M second floor : " << secondM->getDepartmentName() << endl;
+
+    vector<Classroom*> toset;
+
+    toset.push_back(m101);
+    toset.push_back(m102);
+    toset.push_back(c202);
+
+    rad->setExamToClassrooms(toset);
+
+    printClassrooms(myIterator,"");
+
+    return 0;
 }
