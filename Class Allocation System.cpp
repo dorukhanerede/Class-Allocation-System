@@ -118,7 +118,7 @@ private:
 };
 
 //
-//CONCRETE ITERATOR FOR AVAILABLE CLASSROOMS
+//CONCRETE ITERATOR FOR CLASSROOMS
 //
 class ClassroomIterator : public abstractIterator
 {
@@ -210,6 +210,7 @@ private:
     ClassroomIterator* classroomIterator;
 };
 
+// This function is printing the iterator
 void printClassrooms(ClassroomIterator *i, string type) {
     cout << endl << "Iterating classrooms: " << endl;
     for (i->First(type); !i->Done(); i->Next(type)) {
@@ -311,11 +312,12 @@ int main()
     ieu->add(m);
     ieu->add(c);
 
-    ieu->display(1);
+    // To display the campus
+    //ieu->display(1);
 
-    m101->setAvailibility(false);
-    c102->setAvailibility(false);
-    c202->setAvailibility(false);
+    //m101->setAvailibility(false);
+    //c102->setAvailibility(false);
+    //c202->setAvailibility(false);
 
     ClassroomIterator* myIterator = new ClassroomIterator(&classrooms);
     printClassrooms(myIterator,"");
