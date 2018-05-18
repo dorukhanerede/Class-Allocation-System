@@ -1,356 +1,31 @@
+#include "Class Allocation System.h"
+
 #include <iostream>
 #include <vector>
 
 using namespace std;
 
 class Department;
-
-//COMPONENT
-class Component
-{
-public:
-    virtual ~Component(){};
-    virtual void add(Component *d) {};
-    virtual void display(int indent) {};
-    virtual bool getAvailability(){};
-    virtual void setAvailability(bool){};
-    virtual Department* getDepartment(){};
-    string getName() {return name;};
-protected:
-    vector<Component*> components;
-    Component(string n) {name=n;};
-private:
-    string name;
-};
-
-//COMPOSITE CLASS 1
-class Campus : public Component
-{
-public:
-    Campus(string name) : Component(name) {};
-
-    void add(Component *c) {
-        components.push_back(c);
-    }
-
-    void display(int indent)
-    {
-        for(int i = 1;i <= indent;i++) { cout <<"-";}
-        cout <<  "+ " + getName() << endl;
-
-        for (unsigned int i= 0; i< components.size(); i++) {
-            components[i]->display(indent+2);
-        }
-    }
-};
-
-//KEY CLASS FOR SINGLETON OBJECT
-class Key
-{
-public:
-    static Key* getKey(){
-        if(key == NULL)
-            key = new Key();
-        return key;
-    };
-private:
-    Key(){};
-    Key(Key const&);
-    void operator = (Key const&);
-    static Key* key;
-};
+class Lock;
+class abstractIterator;
+class Teacher;
+class Department;
 
 Key *Key::key = NULL;
 
-//LOCK FOR CLASSROOMS
-class Lock
-{
-public:
-    Lock(){};
-
-    bool getState()
+SecurityPersonal::SecurityPersonal(string name){
+    _name = name;
+}
+void SecurityPersonal::setIterator(abstractIterator* classroomIterator){
+    _classroomIterator=classroomIterator;
+}
+void SecurityPersonal::askToUnlock(Teacher* teacher, string className){
+    for(_classroomIterator->First(); !_classroomIterator->Done(); _classroomIterator->Next())
     {
-        return state;
+        if(_classroomIterator->getCurrent()->getName()==className && _classroomIterator->getCurrent()->getDepartment()->getSecurityPersonal()->getSecurityName()==_name)
+            _classroomIterator->getCurrent()->getLock()->openLock(Key::getKey());
     }
-
-    void openLock(Key *key)
-    {
-        if(key==NULL)
-            cout << "You need key"<<endl;
-        else
-            state=false;
-    }
-
-    void closeLock()
-    {
-        if(state==false)
-            state=true;
-        else
-            cout << "The lock is already closed"<<endl;
-    }
-private:
-    bool state = true;
-};
-
-//COMPOSITE CLASS 2
-class Building : public Component
-{
-public:
-    Building(string name) : Component(name) {};
-
-    void add(Component *c) {
-        components.push_back(c);
-    }
-
-    void display(int indent)
-    {
-        for(int i = 1;i <= indent;i++) { cout <<"-";}
-        cout <<  "+ " + getName() << endl;
-
-        for (unsigned int i= 0; i< components.size(); i++) {
-            components[i]->display(indent+2);
-        }
-    }
-    void getLockState()
-    {
-        if(lock->getState())
-            cout << "It is locked" << endl;
-        else
-            cout << "It is not locked" << endl;
-    }
-private:
-    Lock *lock= new Lock();
-};
-
-//SECURITY PERSONAL
-class SecurityPersonal
-{
-public:
-    SecurityPersonal(string name){_name = name;};
-    void addDepartmentClassrooms(Classroom* classroom)
-    string getSecurityName(){return _name; };
-    void askToUnlock(Teacher* teacher,string name){key.getKey();}
-private:
-    ClassroomCollection* collection;
-    string _name;
-    Key* key;
-};
-
-//DEPARTMENT CLASS FOR EVERY FLOOR
-class Department
-{
-public:
-    Department(string name, SecurityPersonal *toSc) {departmentName = name; sc = toSc;};
-    string getName(){return departmentName;};
-    SecurityPersonal* getSecurityPersonal(){return sc;};
-private:
-    string departmentName;
-    SecurityPersonal* sc;
-};
-
-//TEACHER
-class Teacher
-{
-public:
-    Teacher(string name) {_name=name;}
-    string getName() {return _name;}
-private:
-    string _name;
-};
-
-//COMPOSITE CLASS 3
-class Floor : public Component
-{
-public:
-    Floor(string name, Department* dep) : Component(name) {setDepartment(dep);};
-
-    void add(Component *c) {
-        components.push_back(c);
-    }
-
-    void setDepartment(Department *_department)
-    {
-        department = _department;
-    }
-
-    Department* getDepartment()
-    {
-        return department;
-    }
-
-    string getDepartmentName() {
-        return department->getName();
-    }
-
-    void display(int indent)
-    {
-        for(int i = 1;i <= indent;i++) { cout <<"-";}
-        cout <<  "+ " + getName() << endl;
-
-        for (unsigned int i= 0; i< components.size(); i++) {
-            components[i]->display(indent+2);
-        }
-    }
-
-private:
-    Department* department;
-};
-
-//LEAF CLASS
-class Classroom : public Component
-{
-public:
-    Classroom(string name) : Component(name) {setAvailability(true);};
-
-    void setAvailability(bool toSet)
-    {
-        available=toSet;
-    }
-    bool getAvailability()
-    {
-        return available;
-    }
-    void add(Component *c) {
-        cout<<"Classroom is leaf";
-    }
-    void display(int indent) {
-        for(int i = 1;i <= indent;i++) { cout <<"-";}
-            cout << " " << getName() << endl;
-    }
-private:
-    bool available;
-    Lock *lock = new Lock();
-};
-
-//ABSTRACT ITERATOR
-class abstractIterator
-{
-public:
-    virtual Component* getCurrent() const =0;
-    virtual void First()=0;
-    virtual bool Done()const=0;
-    virtual void Next()=0;
-    abstractIterator(){}
-};
-
-class FloorCollection;
-
-class FloorIterator : public abstractIterator
-{
-public:
-    FloorIterator(const FloorCollection *floorCollection);
-	void First();
-    void Next();
-    Floor* getCurrent()const;
-	bool Done()const;
-private:
-	const FloorCollection *_floorCollection;
-	int _current;
-};
-
-class ClassroomCollection;
-//
-//CONCRETE ITERATOR FOR CLASSROOMS
-//
-class ClassroomIterator : public abstractIterator
-{
-public:
-    ClassroomIterator(const ClassroomCollection *classroomCollection);
-    ClassroomIterator(vector<Classroom*> *a){collection = *a;};
-	void First();
-    void Next();
-    Classroom* getCurrent()const;
-	bool Done()const;
-private:
-    vector<Classroom*> collection;
-	const ClassroomCollection *_classroomCollection;
-	int _current;
-
-    /*vector<Classroom*> collection;
-    int currentIndex;
-public:
-    ClassroomIterator(vector<Classroom*> *a)
-    {
-        collection=*a;//copy vector
-    }
-    bool Done()
-    {
-        return currentIndex>=collection.size();
-    }
-    void Next(string type)
-    {
-        if(type=="")
-        {
-            for(;;)
-            {
-                if(currentIndex==(collection.size())-1)
-                {
-                    currentIndex++;
-                    break;
-                }
-                currentIndex++;
-                if(getCurrent()->getAvailibility())
-                {
-                    break;
-                }
-            }
-        }else
-        {
-            currentIndex++;
-        }
-
-    }
-    void First(string type)
-    {
-        if(type=="")
-        {
-            currentIndex=0;
-            if(!getCurrent()->getAvailibility())
-            {
-                for(currentIndex = 1; currentIndex >= collection.size();currentIndex++)
-                {
-                    if(getCurrent()->getAvailibility())
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-        else
-            currentIndex=0;
-    }
-    Classroom* getCurrent()
-    {
-        return collection.at(currentIndex);
-    }*/
-};
-
-//ABSTRACT COLLECTION
-class AbstractCollection
-{
-public:
-	 virtual ~AbstractCollection(){};
-	 virtual abstractIterator* CreateIterator() = 0;
-	 virtual void add(Component*){}; 		// Not needed for iteration.
-	 virtual int getCount () const = 0; // Needed for iteration.
-	 virtual Component* get(int) const = 0; // Needed for iteration.
-protected:
-	AbstractCollection(){};
-};
-
-//CONCRETE COLLECTION FOR CLASSROOMS
-class ClassroomCollection : public AbstractCollection
-{
-private:
-	 vector<Classroom*> classrooms;
-public:
-	ClassroomIterator* CreateIterator() {
-		return new ClassroomIterator(this);
-    };
-    int getCount () const {return classrooms.size(); };
-    Classroom* get(int index) const{ return classrooms[index];};
-    void add(Classroom* classroom) {classrooms.push_back(classroom);};
-};
+}
 
 ClassroomIterator::ClassroomIterator(const ClassroomCollection *classroomCollection) :
 	_classroomCollection(classroomCollection) {
@@ -368,19 +43,6 @@ Classroom* ClassroomIterator::getCurrent()const {
 	return (Done()?NULL:_classroomCollection->get(_current));
 }
 
-class FloorCollection : public AbstractCollection
-{
-private:
-	 vector<Floor*> floors;
-public:
-	FloorIterator* CreateIterator() {
-		return new FloorIterator(this);
-    };
-    int getCount () const {return floors.size(); };
-    Floor* get(int index) const{ return floors[index];};
-    void add(Floor* floor) {floors.push_back(floor);};
-};
-
 FloorIterator::FloorIterator(const FloorCollection *floorCollection) :
 	_floorCollection(floorCollection) {
 }
@@ -397,6 +59,10 @@ Floor* FloorIterator::getCurrent()const {
 	return (Done()?NULL:_floorCollection->get(_current));
 }
 
+void Teacher::update(Classroom* classroom){_classroom=classroom;cout << endl << "Notified "+this->getName()+
+    " about the classroom that he wanted to make an exam,\nthe previous exam was cancelled so you have been moved to have the classroom."<<endl;
+}
+
 //
 //FACADE CLASS
 //TODO
@@ -409,15 +75,20 @@ public:
         ieu = new Campus("IEU");
         Building* m = new Building("M block");
         Building* c = new Building("C block");
-        Department* se = new Department("Software Engineering",new SecurityPersonal("Murat Celik"));
-        Department* ce = new Department("Computer Engineering",new SecurityPersonal("Dorukhan Nerede"));
-        Department* cie = new Department("Civil Engineering",new SecurityPersonal("Aytac Celiktug"));
+        SecurityPersonal *mc = new SecurityPersonal("Murat Celik");
+        SecurityPersonal *dn = new SecurityPersonal("Dorukhan Nerede");
+        SecurityPersonal *ac = new SecurityPersonal("Aytac Celiktug");
+        Department* se = new Department("Software Engineering",mc);
+        Department* ce = new Department("Computer Engineering",dn);
+        Department* cie = new Department("Civil Engineering",ac);
         Floor* firstM = new Floor("M 1st Floor", se);
         Floor* secondM = new Floor("M 2nd Floor", ce);
         Floor* firstC = new Floor("C 1st Floor", se);
         Floor* secondC = new Floor("C 2nd Floor", cie);
         Classroom* m101 = new Classroom("M101");
+        m101->setFloor(firstM);
         Classroom* m102 = new Classroom("M102");
+        m102->setFloor(firstM);
         Classroom* c101 = new Classroom("C101");
         Classroom* c102 = new Classroom("C102");
         Classroom* m201 = new Classroom("M201");
@@ -460,22 +131,51 @@ public:
         myCollection2->add(secondC);
         classroomIterator = myCollection->CreateIterator();
         floorIterator = myCollection2->CreateIterator();
+        mc->setIterator(classroomIterator);
+        dn->setIterator(classroomIterator);
+        ac->setIterator(classroomIterator);
+        setResourceAllocationDepartmentofClassrooms();
     };
+
+    void setResourceAllocationDepartmentofClassrooms(){
+        for(classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next())
+        {
+            classroomIterator->getCurrent()->setResourceAllocationDepartment(this);
+        }
+    }
 
     void setAllAvailabilityOfClassrooms(bool toSet)
     {
         for(classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next())
         {
-            classroomIterator->getCurrent()->setAvailability(toSet);
+            if(!toSet){
+                classroomIterator->getCurrent()->setAvailability(toSet);
+                classroomIterator->getCurrent()->getLock()->openLock(Key::getKey());
+            }else
+            {
+                classroomIterator->getCurrent()->setAvailability(toSet);
+                classroomIterator->getCurrent()->getLock()->closeLock(Key::getKey());
+            }
         }
     }
 
-    void setExamToClassrooms(string className)
+    void setExamToClassrooms(string className, Teacher* teacher)
     {
         for(classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next())
         {
             if(classroomIterator->getCurrent()->getName()==className)
-                classroomIterator->getCurrent()->setAvailability(false);
+            {
+                if(classroomIterator->getCurrent()->getAvailability())
+                {
+                    classroomIterator->getCurrent()->setAvailability(false);
+                    return;
+                }
+                else
+                {
+                    classroomIterator->getCurrent()->attach(teacher);
+                    return;
+                }
+            }
         }
     }
 
@@ -484,7 +184,23 @@ public:
         cout << endl << "Iterating classrooms: " << endl;
         for (classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next()) {
             if(classroomIterator->getCurrent()->getAvailability())
-                cout << "Available Classrooms -> " << classroomIterator->getCurrent()->getName() << endl;
+                cout << "Available Classrooms -> " << classroomIterator->getCurrent()->getName() << endl ;
+        }
+        cout << endl;
+     }
+
+    void getClassLockState(string className)
+    {
+        for(classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next())
+        {
+            if(classroomIterator->getCurrent()->getName()==className)
+                {
+                    if(!classroomIterator->getCurrent()->getLock()->getState())
+                        cout<< className +" is not locked, you can enter"<<endl;
+                    else
+                        cout << className +" is locked, you cannot enter"<<endl;
+                    return;
+                }
         }
     }
 
@@ -497,24 +213,72 @@ public:
         }
     }
 
+    void cancelExam(string className, Teacher* teacher)
+    {
+        for(classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next())
+        {
+            if(classroomIterator->getCurrent()->getName()==className)
+                if(!classroomIterator->getCurrent()->getAvailability())
+                    {
+                        classroomIterator->getCurrent()->setAvailability(true);
+                        return;
+                    }
+        }
+    }
+
     void displaySchool()
     {
         ieu->display(1);
     }
+
+    void setClassroomAvailability(string className)
+    {
+        for (classroomIterator->First(); !classroomIterator->Done(); classroomIterator->Next()) {
+                if(classroomIterator->getCurrent()->getName()==className)
+                    classroomIterator->getCurrent()->setAvailability(false);
+        }
+    }
+
+
 private:
     abstractIterator *classroomIterator;
     abstractIterator *floorIterator;
     Campus *ieu;
 };
 
+void Classroom::notify(){
+    for (unsigned int i = 0; i < teachers.size(); i++) {
+        teachers[i]->update(this);
+        _rad->setExamToClassrooms(teachers[i]->getClassroomWanted()->getName(),this->teachers[i]);
+        _rad->setClassroomAvailability(teachers[i]->getClassroomWanted()->getName());
+        this->detach(teachers[i]);
+        return;
+    }
+}
+
+
 int main()
 {
+    Teacher *uc = new Teacher("Ufuk Celikkan");
+    Teacher *kk = new Teacher("Kaan Kurtel");
     ResourceAllocationDepartment* rad = new ResourceAllocationDepartment();
-    rad->displaySchool();
-    rad->setExamToClassrooms("M101");
-    rad->printClassrooms();
+    rad->displaySchool(); // -> this is displaying the IEU campus
+    rad->printClassrooms(); // before setting an exam displaying the available rooms
+    rad->setExamToClassrooms("M101",uc);//setting an exam
+    rad->printClassrooms(); // after setting an exam displaying the available rooms
     SecurityPersonal* sp = rad->getSecurityPersonalOfFloor("M 1st Floor");
-    sp->
+    sp->askToUnlock(uc,"M101"); // Teacher is asking the correct security guard for the keys
+    rad->getClassLockState("M101");
+    rad->getClassLockState("M102"); // this is the classroom's lock state
+    rad->setExamToClassrooms("M101",kk); // second teacher is saying that he wants the same class as the previous teacher so this teacher will be observer
+    rad->cancelExam("M101",uc); // the first teacher is canceling the exam and this will result with the notification to the second teacher that wanted this class
+
+    ResourceAllocationDepartment* rad2 = new ResourceAllocationDepartment();
+    cout<<endl;
+    rad2->setAllAvailabilityOfClassrooms(false); //on a second ieu setting all classrooms for history,foreing language exams
+    rad2->getClassLockState("M101");
+    rad2->setAllAvailabilityOfClassrooms(true);
+    rad2->getClassLockState("M101");
 
     return 0;
 }
